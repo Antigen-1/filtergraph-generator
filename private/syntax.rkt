@@ -97,7 +97,7 @@
         v)))
 (define (render-filter-arguments v)
   (define (escape-argument v)
-    (escape (set #\: #\') v #\\))
+    (escape (set #\: #\' #\\) v #\\))
   (define (render-keyword-argument v)
     (escape-argument (string-append (keyword->string (car v)) "=" (cdr v))))
   (define (render-argument v)
@@ -143,9 +143,13 @@
     ((filter name args in out)
      (string-append
       (render-link-labels in)
-      (render-name name)
-      "="
-      (render-filter-arguments args)
+      (escape
+       (set #\[ #\] #\, #\; #\' #\\)
+       (string-append
+        (render-name name)
+        "="
+        (render-filter-arguments args))
+       #\\)
       (render-link-labels out)))))
 
 (module+ test
@@ -156,6 +160,12 @@
   (check-true (filter? filter))
   (check-true (filter? `((,name) : () -> ())))
   (check-false (filter? null))
+  (check-equal?
+   (render-filter
+    `((drawtext (#:text . "this is a 'string': may contain one, or more, special characters"))
+      :
+      () -> ()))
+   "drawtext=text=this is a \\\\\\'string\\\\\\'\\\\: may contain one\\, or more\\, special characters")
   (check-equal? (render-filter filter)
                 (string-append (render-link-labels (list name))
                                (render-filter-name name)
