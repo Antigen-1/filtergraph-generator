@@ -16,14 +16,19 @@ A ffmpeg filtergraph renderer.
        [close @litchar{)}]
        [dot @litchar{.}])
    @BNF[(list @nonterm{maybe-sws-flags}
-              @BNF-seq[@optional[open @litchar{#:sws-flags} dot @nonterm{sws-flags} close]])
+              @BNF-seq[@optional[open @litchar{#:sws-flags} dot @nonterm{string} close]])
         (list @nonterm{name}
               @elem{sequence of alphanumeric characters and @litchar{_}})
         (list @nonterm{label}
               @nonterm{name})
+        (list @nonterm{filter argument}
+              @BNF-alt[
+                       @elem[open @nonterm{keyword} dot @nonterm{string} close]
+                       @nonterm{string}
+                       ])
         (list @nonterm{filter}
               @BNF-seq[open
-                       open @nonterm{name} close
+                       open @nonterm{name} @kleenestar[@nonterm{filter argument}] close
                        @litchar{:}
                        open @kleenestar[@nonterm{label}] close
                        @litchar{->}
