@@ -194,7 +194,7 @@
   (check-true (filterchain? `(>>> ,filter ,filter)))
   (check-false (filterchain? `(>>>)))
   (check-equal? (render-filterchain `(>>> ,filter ,filter))
-                (string-append (render-filter filter) (render-filter filter))))
+                (string-append (render-filter filter) "," (render-filter filter))))
 
 ;; FILTERGRAPH ::= [sws_flags=flags;] FILTERCHAIN [;FILTERGRAPH]
 (define-match-expander filtergraph
