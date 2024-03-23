@@ -102,18 +102,23 @@
     (escape-argument (string-append (keyword->string (car v)) "=" (cdr v))))
   (define (render-argument v)
     (escape-argument v))
-  (string-join
-   (map
-    (lambda (a)
-      (match a
-        ((and all (filter-argument kw str))
-         (if kw (render-keyword-argument all) (render-argument str)))))
-    v)
-   ":"))
+  (define-values (kw-reversed dr-reversed)
+    (for/fold ((kw null)
+               (dr null))
+              ((arg (in-list v)))
+      (match arg
+        ((and (filter-argument kw? str) all)
+         (if kw?
+             (values (cons (render-keyword-argument all) kw) dr)
+             (values kw (cons (render-argument str) dr)))))))
+  (define ordered (append (reverse dr-reversed) (reverse kw-reversed)))
+  (string-join ordered ":"))
 
 (module+ test
   (check-true (filter-arguments? (list "a" (cons '#:a "a"))))
   (check-false (filter-arguments? "a"))
+  (check-equal? (render-filter-arguments (list (cons '#:a "A") "a"))
+                "a:a=A")
   (let ((id (uuid-string))) (check-equal? (render-filter-arguments (list id)) id))
   (let ((id (uuid-string))
         (kw (string->keyword (uuid-string))))
