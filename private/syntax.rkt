@@ -188,8 +188,7 @@
 (define (render-filterchain v)
   (match v
     ((filterchain fs)
-     (string-append* (map render-filter fs)))
-    ))
+     (string-join (map render-filter fs) ","))))
 
 (module+ test
   (check-true (filterchain? `(>>> ,filter ,filter)))
