@@ -7,4 +7,4 @@
 
 @defmodule[filtergraph-generator]
 
-Package Description Here
+A ffmpeg filtergraph renderer.

@@ -1,3 +1,3 @@
 filtergraph-generator
 =====================
-README text here.
+A ffmpeg filtergraph renderer.
