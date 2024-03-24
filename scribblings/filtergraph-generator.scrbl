@@ -23,7 +23,7 @@ A ffmpeg filtergraph renderer.
               @nonterm{name})
         (list @nonterm{complex input label}
               @BNF-seq[open @nonterm{file index(exact nonnegative integer)}
-                            @nonterm{stream specifier(exact nonnegative integer)} close]
+                            @nonterm{stream specifier} close]
               @BNF-seq[open
                        @litchar{dec}
                        @nonterm{the index of loopback decoder(exact nonnegative integer)}
