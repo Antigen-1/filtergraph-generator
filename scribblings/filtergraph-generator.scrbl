@@ -62,9 +62,4 @@ A ffmpeg filtergraph renderer.
 @defproc[#:kind "renderer"
          (render-filtergraph (value filtergraph?))
          string?]
-@defproc[#:kind "parameter"
-         (complex? (flag boolean?))
-         any]
-@defproc[#:kind "parameter"
-         (complex?)
-         boolean?]
+@defparam[complex? flag boolean? #:value #f]
