@@ -10,7 +10,7 @@
 
 A ffmpeg filtergraph renderer.
 
-@section{Usage}
+@section{Filtergraph Representation}
 
 @(let ([open @litchar{(}]
        [close @litchar{)}]
@@ -21,6 +21,15 @@ A ffmpeg filtergraph renderer.
               @elem{sequence of alphanumeric characters and @litchar{_}})
         (list @nonterm{label}
               @nonterm{name})
+        (list @nonterm{complex input label}
+              @elem[open @nonterm{file index(exact nonnegative integer)}
+                         @nonterm{stream specifier(exact nonnegative integer)} close]
+              @elem[open
+                    @litchar{dec}
+                    @nonterm{the index of loopback decoder(exact nonnegative integer)}
+                    close])
+        (list @nonterm{input label}
+              @BNF-alt[@nonterm{label} @nonterm{complex input label}])
         (list @nonterm{filter argument}
               @BNF-alt[
                        @elem[open @nonterm{keyword} dot @nonterm{string} close]
@@ -30,7 +39,7 @@ A ffmpeg filtergraph renderer.
               @BNF-seq[open
                        open @nonterm{name} @kleenestar[@nonterm{filter argument}] close
                        @litchar{:}
-                       open @kleenestar[@nonterm{label}] close
+                       open @kleenestar[@nonterm{input label}] close
                        @litchar{->}
                        open @kleenestar[@nonterm{label}] close
                        close])
@@ -44,3 +53,18 @@ A ffmpeg filtergraph renderer.
                        open @nonterm{maybe-sws-flags} close
                        @kleeneplus[@nonterm{filterchain}]
                        close])])
+
+@section{Exported Functions}
+
+@defproc[#:kind "predicate"
+         (filtergraph? (value any/c))
+         boolean?]
+@defproc[#:kind "renderer"
+         (render-filtergraph (value filtergraph?))
+         string?]
+@defproc[#:kind "parameter"
+         (complex? (flag boolean?))
+         any]
+@defproc[#:kind "parameter"
+         (complex?)
+         boolean?]
