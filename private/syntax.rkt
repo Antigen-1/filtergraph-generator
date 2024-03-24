@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/set racket/list racket/match racket/string racket/contract
          uuid
-         "escape.rkt" "config.rkt" "specifier.rkt"
+         "escape.rkt" "config.rkt" "specifier.rkt" "keyword.rkt"
          (for-syntax racket/base))
 (provide (contract-out (filtergraph? (-> any/c any))
                        (render-filtergraph (-> filtergraph? string?))))
@@ -112,11 +112,11 @@
 
 (module+ test
   (check-true (complex-input-labels? (list (list 'dec 0))))
-  (check-true (complex-input-labels? (list (list 0 '((#:stream-type . v) 0)))))
+  (check-true (complex-input-labels? (list (list 0 '(#:stream-type v #:stream-index 0)))))
   (check-false (complex-input-labels? (list (list -1 0))))
   (check-false (complex-input-labels? (list (list 'decoder 0))))
   (let ((fst (random 0 100)) (scd (random 0 100)))
-    (check-equal? (render-complex-input-labels (list (list fst (list scd))))
+    (check-equal? (render-complex-input-labels (list (list fst (list '#:stream-index scd))))
                   (format "[~a:~a]" fst scd)))
   (let ((scd (random 0 100)))
     (check-equal? (render-complex-input-labels (list (list 'dec scd)))
@@ -131,12 +131,14 @@
          `(,(? keyword? kw) . ,(? string? str))))))
 (define (filter-arguments? v)
   (and (list? v)
-       (andmap
-        (lambda (a)
-          (match a
-            ((filter-argument _ _) #t)
-            (_ #f)))
-        v)))
+       (let ((parsed (parse-argument-list v)))
+         (and parsed
+              (andmap
+               (lambda (a)
+                 (match a
+                   ((filter-argument _ _) #t)
+                   (_ #f)))
+               parsed)))))
 (define (empty-filter-arguments? v) (null? v))
 (define (render-filter-arguments v)
   (define (escape-argument v)
@@ -145,10 +147,11 @@
     (escape-argument (string-append (keyword->string (car v)) "=" (cdr v))))
   (define (render-argument v)
     (escape-argument v))
+  (define parsed (parse-argument-list v))
   (define-values (kw-reversed dr-reversed)
     (for/fold ((kw null)
                (dr null))
-              ((arg (in-list v)))
+              ((arg (in-list parsed)))
       (match arg
         ((and (filter-argument kw? str) all)
          (if kw?
@@ -158,14 +161,14 @@
   (string-join ordered ":"))
 
 (module+ test
-  (check-true (filter-arguments? (list "a" (cons '#:a "a"))))
+  (check-true (filter-arguments? (list "a" '#:a "a")))
   (check-false (filter-arguments? "a"))
-  (check-equal? (render-filter-arguments (list (cons '#:a "A") "a"))
+  (check-equal? (render-filter-arguments (list '#:a "A" "a"))
                 "a:a=A")
   (let ((id (uuid-string))) (check-equal? (render-filter-arguments (list id)) id))
   (let ((id (uuid-string))
         (kw (string->keyword (uuid-string))))
-    (check-equal? (render-filter-arguments (list (cons kw id)))
+    (check-equal? (render-filter-arguments (list kw id))
                   (string-append (keyword->string kw) "=" id)))
   (let ((id (uuid-string)))
     (check-equal? (render-filter-arguments (list (string-replace id #rx"-" ":")))
@@ -207,19 +210,19 @@
   (define name (generate-name))
   (define kw (string->keyword (uuid-string)))
   (define str (uuid-string))
-  (define filter `((,name (,kw . ,str) ,str) : (,name) -> (,name)))
+  (define filter `((,name ,kw ,str ,str) : (,name) -> (,name)))
   (check-true (filter? filter))
   (check-true (filter? `((,name) : () -> ())))
   (check-false (filter? null))
   (parameterize ((complex? #t))
     (define int (random 0 100))
     (check-true (filter? `((,name) : ((dec ,int)) -> ())))
-    (check-true (filter? `((,name) : ((,int ((#:stream-id . "stream")))) -> ())))
+    (check-true (filter? `((,name) : ((,int (#:stream-id "stream"))) -> ())))
     (check-equal? (render-filter `((,name) : ((dec ,int)) -> ()))
                   (format "[dec:~a]~a" int name)))
   (check-equal?
    (render-filter
-    `((drawtext (#:text . "this is a 'string': may contain one, or more, special characters"))
+    `((drawtext #:text "this is a 'string': may contain one, or more, special characters")
       :
       () -> ()))
    "drawtext=text=this is a \\\\\\'string\\\\\\'\\\\: may contain one\\, or more\\, special characters")
@@ -277,8 +280,8 @@
 
 (module+ test
   (define graph1 `(((#:sws-flags . "a"))
-                  (>>> ,filter)
-                  (>>> ,filter)))
+                   (>>> ,filter)
+                   (>>> ,filter)))
   (define graph2 `(()
                    (>>> ,filter)
                    (>>> ,filter)))
