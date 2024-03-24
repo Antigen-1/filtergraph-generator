@@ -22,17 +22,17 @@ A ffmpeg filtergraph renderer.
         (list @nonterm{label}
               @nonterm{name})
         (list @nonterm{complex input label}
-              @elem[open @nonterm{file index(exact nonnegative integer)}
-                         @nonterm{stream specifier(exact nonnegative integer)} close]
-              @elem[open
-                    @litchar{dec}
-                    @nonterm{the index of loopback decoder(exact nonnegative integer)}
-                    close])
+              @BNF-seq[open @nonterm{file index(exact nonnegative integer)}
+                            @nonterm{stream specifier(exact nonnegative integer)} close]
+              @BNF-seq[open
+                       @litchar{dec}
+                       @nonterm{the index of loopback decoder(exact nonnegative integer)}
+                       close])
         (list @nonterm{input label}
               @BNF-alt[@nonterm{label} @nonterm{complex input label}])
         (list @nonterm{filter argument}
               @BNF-alt[
-                       @elem[open @nonterm{keyword} dot @nonterm{string} close]
+                       @BNF-seq[open @nonterm{keyword} dot @nonterm{string} close]
                        @nonterm{string}
                        ])
         (list @nonterm{filter}
