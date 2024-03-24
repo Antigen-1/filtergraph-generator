@@ -31,7 +31,7 @@
      `((#:stream-group
         .
         ,(?
-          (lambda (v) (or (exact-nonnegative-integer? v) (symbol? v)))
+          (lambda (v) (or (exact-nonnegative-integer? v) (string? v)))
           (app (lambda (v)
                  (if (exact-nonnegative-integer? v)
                      (cons 'index v)
@@ -57,7 +57,7 @@
 (define-match-expander program-and-others
   (syntax-rules ()
     ((_ id others)
-     `((#:program . ,(and id (? symbol?)))
+     `((#:program . ,(and id (? string?)))
        ,@(? stream-specifier/null? others)))))
 (define (program-and-others? v)
   (match v
@@ -72,7 +72,7 @@
 (define-match-expander stream-id
   (syntax-rules ()
     ((_ stream-id)
-     `(#:stream-id . ,(and stream-id (? symbol?))))))
+     `(#:stream-id . ,(and stream-id (? string?))))))
 (define (stream-id? v)
   (match v
     ((stream-id _) #t)
@@ -143,19 +143,19 @@
   (check-true (stream-specifier? `(0)))
   (check-true (stream-specifier? `((#:stream-type . V))))
   (check-true (stream-specifier? `((#:stream-type . V) 0)))
-  (check-true (stream-specifier? `((#:stream-group . a) 0)))
-  (check-true (stream-specifier? `((#:stream-id . a))))
+  (check-true (stream-specifier? `((#:stream-group . "a") 0)))
+  (check-true (stream-specifier? `((#:stream-id . "a"))))
   (check-true (stream-specifier? `((#:metadata "a" . "b"))))
   (check-true (stream-specifier? `((#:metadata . "a"))))
   (check-true (stream-specifier? `((#:usable-configuration . "b"))))
   (check-false (stream-specifier? `(0 (#:stream-type . V))))
-  (check-false (stream-specifier? `(0 (#:stream-group . a))))
+  (check-false (stream-specifier? `(0 (#:stream-group . "a"))))
   (check-equal? (render-stream-speficier `(0)) "0")
   (check-equal? (render-stream-speficier `((#:stream-type . v))) "v")
   (check-equal? (render-stream-speficier `((#:stream-type . V) 0)) "V:0")
-  (check-equal? (render-stream-speficier `((#:stream-type . V) (#:stream-group . a) 0)) "V:g:i:a:0")
-  (check-equal? (render-stream-speficier `((#:stream-type . V) (#:program . a1) 0)) "V:p:a1:0")
-  (check-equal? (render-stream-speficier `((#:stream-type . V) (#:stream-id . a))) "V:i:a")
+  (check-equal? (render-stream-speficier `((#:stream-type . V) (#:stream-group . "a") 0)) "V:g:i:a:0")
+  (check-equal? (render-stream-speficier `((#:stream-type . V) (#:program . "a1") 0)) "V:p:a1:0")
+  (check-equal? (render-stream-speficier `((#:stream-type . V) (#:stream-id . "a"))) "V:i:a")
   (check-equal? (render-stream-speficier `((#:stream-type . V) (#:metadata . "a"))) "V:m:a")
   (check-equal? (render-stream-speficier `((#:stream-type . V) (#:metadata "s" . "a"))) "V:m:s:a")
   (check-equal? (render-stream-speficier `((#:stream-type . V) (#:usable-configuration . "a"))) "V:a")

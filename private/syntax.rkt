@@ -214,7 +214,7 @@
   (parameterize ((complex? #t))
     (define int (random 0 100))
     (check-true (filter? `((,name) : ((dec ,int)) -> ())))
-    (check-true (filter? `((,name) : ((,int ((#:stream-id . stream)))) -> ())))
+    (check-true (filter? `((,name) : ((,int ((#:stream-id . "stream")))) -> ())))
     (check-equal? (render-filter `((,name) : ((dec ,int)) -> ()))
                   (format "[dec:~a]~a" int name)))
   (check-equal?
