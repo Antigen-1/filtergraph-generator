@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/set racket/list racket/match racket/string racket/contract
          uuid
-         "escape.rkt" "config.rkt"
+         "escape.rkt" "config.rkt" "specifier.rkt"
          (for-syntax racket/base))
 (provide (contract-out (filtergraph? (-> any/c any))
                        (render-filtergraph (-> filtergraph? string?))))
@@ -89,7 +89,7 @@
      (or `(,(and fst 'dec)
            ,(and scd (? exact-nonnegative-integer?)))
          `(,(and fst (? exact-nonnegative-integer?))
-           ,(and scd (? string?)))))))
+           ,(and scd (? stream-specifier?)))))))
 (define (complex-input-labels? v)
   (and (list? v)
        (not (null? v))
@@ -105,16 +105,18 @@
     (lambda (l)
       (match l
         ((complex-input-label fst scd)
-         (format "[~a:~a]" fst scd))))
+         (format "[~a:~a]"
+                 fst
+                 (if (eq? fst 'dec) scd (render-stream-speficier scd))))))
     v)))
 
 (module+ test
   (check-true (complex-input-labels? (list (list 'dec 0))))
-  (check-true (complex-input-labels? (list (list 0 "a:0"))))
+  (check-true (complex-input-labels? (list (list 0 '((#:stream-type . v) 0)))))
   (check-false (complex-input-labels? (list (list -1 0))))
   (check-false (complex-input-labels? (list (list 'decoder 0))))
-  (let ((fst (random 0 100)) (scd "s"))
-    (check-equal? (render-complex-input-labels (list (list fst scd)))
+  (let ((fst (random 0 100)) (scd (random 0 100)))
+    (check-equal? (render-complex-input-labels (list (list fst (list scd))))
                   (format "[~a:~a]" fst scd)))
   (let ((scd (random 0 100)))
     (check-equal? (render-complex-input-labels (list (list 'dec scd)))
@@ -212,7 +214,7 @@
   (parameterize ((complex? #t))
     (define int (random 0 100))
     (check-true (filter? `((,name) : ((dec ,int)) -> ())))
-    (check-true (filter? `((,name) : ((,int "v")) -> ())))
+    (check-true (filter? `((,name) : ((,int ((#:stream-id . stream)))) -> ())))
     (check-equal? (render-filter `((,name) : ((dec ,int)) -> ()))
                   (format "[dec:~a]~a" int name)))
   (check-equal?

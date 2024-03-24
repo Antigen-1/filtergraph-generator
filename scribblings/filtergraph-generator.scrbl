@@ -15,7 +15,17 @@ A ffmpeg filtergraph renderer.
 @(let ([open @litchar{(}]
        [close @litchar{)}]
        [dot @litchar{.}])
-   @BNF[(list @nonterm{maybe-sws-flags}
+   @BNF[(list @nonterm{stream type}
+              @BNF-alt[@litchar{V} @litchar{v} @litchar{a} @litchar{s} @litchar{t} @litchar{d}])
+        (list @nonterm{stream specifier}
+              @nonterm{stream index(exact nonnegative integer)}
+              @BNF-seq[open @litchar{#:stream-type} dot @nonterm{stream type} close]
+              @BNF-seq[open @litchar{#:stream-group} dot @nonterm{stream group id(symbol)} close]
+              @BNF-seq[open @litchar{#:program} dot @nonterm{program id(symbol)} close]
+              @BNF-seq[open @litchar{#:stream-id} dot @nonterm{stream id(symbol)} close]
+              @BNF-seq[open @litchar{#:metadata} dot @nonterm{metadata key or key-value pair} close]
+              @BNF-seq[open @litchar{#:usable-configuration} dot @nonterm{usable configuration(string)} close])
+        (list @nonterm{maybe-sws-flags}
               @BNF-seq[@optional[open @litchar{#:sws-flags} dot @nonterm{string} close]])
         (list @nonterm{name}
               @elem{sequence of alphanumeric characters and @litchar{_}})
