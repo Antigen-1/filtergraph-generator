@@ -22,7 +22,7 @@
 (define (render-stream-type-and-others v)
   (match v
     ((stream-type-and-others type others)
-     (string-append (format "~a" type) sep (render-stream-speficier others)))))
+     (append-specifier (format "~a" type) others))))
 
 ;; g:group_specifier[:additional_stream_specifier]
 (define-match-expander stream-group-and-others
@@ -45,13 +45,13 @@
 (define (render-stream-group-and-others v)
   (match v
     ((stream-group-and-others info others)
-     (string-append
-      "g:"
-      (match info
-        ((cons 'index ind) (format "~a" ind))
-        ((cons 'id id) (format "i:~a" id)))
-      sep
-      (render-stream-speficier others)))))
+     (append-specifier
+      (string-append
+       "g:"
+       (match info
+         ((cons 'index ind) (format "~a" ind))
+         ((cons 'id id) (format "i:~a" id))))
+      others))))
 
 ;; p:program_id[:additional_stream_specifier]
 (define-match-expander program-and-others
@@ -66,7 +66,7 @@
 (define (render-program-and-others v)
   (match v
     ((program-and-others id others)
-     (string-append "p:" (format "~a" id) sep (render-stream-speficier others)))))
+     (append-specifier (string-append "p:" (format "~a" id)) others))))
 
 ;; #stream_id or i:stream_id
 (define-match-expander stream-id
@@ -121,9 +121,11 @@
              ((and (metadata? (car v)) (null? (cdr v))))
              ((and (usable-configuration? (car v)) (null? (cdr v))))
              (else #f))))
+(define (append-specifier p v)
+  (if (null? v)
+      p
+      (string-append p sep (render-stream-speficier v))))
 (define (render-stream-speficier v)
-  (define (append part rest)
-    (string-append* `(,part ,@(if (null? rest) null (list ":" (render-stream-speficier rest))))))
   (cond ((stream-type-and-others? v) (render-stream-type-and-others v))
         ((stream-group-and-others? v) (render-stream-group-and-others v))
         ((program-and-others? v) (render-program-and-others v))
@@ -149,6 +151,7 @@
   (check-false (stream-specifier? `(0 (#:stream-type . V))))
   (check-false (stream-specifier? `(0 (#:stream-group . a))))
   (check-equal? (render-stream-speficier `(0)) "0")
+  (check-equal? (render-stream-speficier `((#:stream-type . v))) "v")
   (check-equal? (render-stream-speficier `((#:stream-type . V) 0)) "V:0")
   (check-equal? (render-stream-speficier `((#:stream-type . V) (#:stream-group . a) 0)) "V:g:i:a:0")
   (check-equal? (render-stream-speficier `((#:stream-type . V) (#:program . a1) 0)) "V:p:a1:0")
