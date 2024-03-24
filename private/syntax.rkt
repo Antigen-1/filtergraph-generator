@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/set racket/list racket/match racket/string racket/contract
          uuid
-         "escape.rkt"
+         "escape.rkt" "config.rkt"
          (for-syntax racket/base))
 (provide (contract-out (filtergraph? (-> any/c any))
                        (render-filtergraph (-> filtergraph? string?))))
@@ -81,6 +81,44 @@
                    (string-append "[" (render-name name1) "]"
                                   "[" (render-name name2) "]")))))
 
+;; COMPLEX_INPUT_LABEL ::= [file_index:stream_specifier] | [dec:dec_idx]
+;; COMPLEX_INPUT_LABELS ::= COMPLEX_INPUT_LABEL [COMPLEX_INPUT_LABELS]
+(define-match-expander complex-input-label
+  (syntax-rules ()
+    ((_ fst scd)
+     `(,(and fst (or 'dec (? exact-nonnegative-integer?)))
+       ,(and scd (? exact-nonnegative-integer?))))))
+(define (complex-input-labels? v)
+  (and (list? v)
+       (not (null? v))
+       (andmap
+        (lambda (l)
+          (match l
+            ((complex-input-label _ _) #t)
+            (_ #f)))
+        v)))
+(define (render-complex-input-labels v)
+  (string-append*
+   (map
+    (lambda (l)
+      (match l
+        ((complex-input-label fst scd)
+         (format "[~a:~a]" fst scd))))
+    v)))
+
+(module+ test
+  (check-true (complex-input-labels? (list (list 'dec 0))))
+  (check-true (complex-input-labels? (list (list 0 0))))
+  (check-false (complex-input-labels? (list (list -1 0))))
+  (check-false (complex-input-labels? (list (list 'decoder 0))))
+  (let ((fst (random 0 100)) (scd (random 0 100)))
+    (check-equal? (render-complex-input-labels (list (list fst scd)))
+                  (format "[~a:~a]" fst scd)))
+  (let ((scd (random 0 100)))
+    (check-equal? (render-complex-input-labels (list (list 'dec scd)))
+                  (format "[dec:~a]" scd)))
+  )
+
 ;; FILTER_ARGUMENTS ::= sequence of chars (possibly quoted)
 (define-match-expander filter-argument
   (syntax-rules ()
@@ -95,6 +133,7 @@
             ((filter-argument _ _) #t)
             (_ #f)))
         v)))
+(define (empty-filter-arguments? v) (null? v))
 (define (render-filter-arguments v)
   (define (escape-argument v)
     (escape (set #\: #\' #\\) v #\\))
@@ -135,7 +174,8 @@
      `((,(? filter-name? filter-name) ,@(? filter-arguments? filter-arguments))
        :
        ,(or (? null? in-labels)
-            (? link-labels? in-labels))
+            (? (if (complex?) complex-input-labels? link-labels?)
+               in-labels))
        ->
        ,(or (? null? out-labels)
             (? link-labels? out-labels))))))
@@ -147,12 +187,14 @@
   (match v
     ((filter name args in out)
      (string-append
-      (render-link-labels in)
+      (if (link-labels? in)
+          (render-link-labels in)
+          (render-complex-input-labels in))
       (escape
        (set #\[ #\] #\, #\; #\' #\\)
        (string-append
         (render-name name)
-        "="
+        (if (empty-filter-arguments? args) "" "=")
         (render-filter-arguments args))
        #\\)
       (render-link-labels out)))))
@@ -162,9 +204,14 @@
   (define kw (string->keyword (uuid-string)))
   (define str (uuid-string))
   (define filter `((,name (,kw . ,str) ,str) : (,name) -> (,name)))
+  (define second (random 0 100))
   (check-true (filter? filter))
   (check-true (filter? `((,name) : () -> ())))
   (check-false (filter? null))
+  (parameterize ((complex? #t))
+    (check-true (filter? `((,name) : ((dec ,second)) -> ())))
+    (check-equal? (render-filter `((,name) : ((dec ,second)) -> ()))
+                  (format "[dec:~a]~a" second name)))
   (check-equal?
    (render-filter
     `((drawtext (#:text . "this is a 'string': may contain one, or more, special characters"))

@@ -1,7 +1,8 @@
 #lang racket/base
 
-(require "private/syntax.rkt")
-(provide (all-from-out "private/syntax.rkt"))
+(require "private/syntax.rkt" "private/config.rkt")
+(provide (all-from-out "private/syntax.rkt")
+         (all-from-out "private/config.rkt"))
 
 (module+ main
   ;; (Optional) main submodule. Put code here if you need it to be executed when
@@ -11,10 +12,13 @@
 
   (require racket/cmdline racket/contract racket/file raco/command-name)
   (define where (box #f))
+  (define complex (box #f))
   (command-line
     #:program (short-program+command-name)
     #:once-each
     [("-p" "--path") path "Specify the file path" (set-box! where path)]
+    [("-c" "--complex") "Generate complex filtergraph" (set-box! complex #t)]
     #:args ()
     (define/contract path string? (unbox where))
-    (display (render-filtergraph (file->value path)))))
+    (parameterize ((complex? (unbox complex)))
+      (display (render-filtergraph (file->value path))))))
