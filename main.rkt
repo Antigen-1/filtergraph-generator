@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require "private/syntax.rkt" "private/config.rkt")
-(provide (all-from-out "private/syntax.rkt")
+(require "private/data.rkt" "private/config.rkt")
+(provide (all-from-out "private/data.rkt")
          (all-from-out "private/config.rkt"))
 
 (module+ main

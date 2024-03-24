@@ -87,9 +87,9 @@
   (syntax-rules ()
     ((_ fst scd)
      (or `(,(and fst 'dec)
-           ,(and scd (? exact-nonnegative-integer?)))
-         `(,(and fst (? exact-nonnegative-integer?))
-           ,(and scd (? stream-specifier?)))))))
+           ,(? exact-nonnegative-integer? scd))
+         `(,(? exact-nonnegative-integer? fst)
+           ,(? stream-specifier? scd))))))
 (define (complex-input-labels? v)
   (and (list? v)
        (not (null? v))
@@ -194,9 +194,11 @@
   (match v
     ((filter name args in out)
      (string-append
-      (if (link-labels? in)
-          (render-link-labels in)
-          (render-complex-input-labels in))
+      (if (null? in)
+          ""
+          (if (link-labels? in)
+              (render-link-labels in)
+              (render-complex-input-labels in)))
       (escape
        (set #\[ #\] #\, #\; #\' #\\)
        (string-append
