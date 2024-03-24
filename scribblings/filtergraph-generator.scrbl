@@ -1,6 +1,6 @@
 #lang scribble/manual
 @require[@for-label[filtergraph-generator
-                    racket/base]
+                    (except-in racket/base complex?)]
          scribble/bnf]
 
 @title{filtergraph-generator}
