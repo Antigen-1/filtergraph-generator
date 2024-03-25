@@ -1,6 +1,10 @@
 #lang racket/base
 (require racket/contract)
-(provide (contract-out (parse-argument-list (-> list? any))))
+(provide (contract-out (parse-argument-list (-> (listof (not/c (cons/c keyword? any/c))) any))))
+
+;; Positional arguments: any/c
+;; Keyword arguments: keyword? any/c
+;; The values of positional arguments must not be (cons/c keyword? any/c)
 (define (parse-argument-list l)
   (let loop ((original l) (resolved null))
     (cond ((null? original) (reverse resolved))
