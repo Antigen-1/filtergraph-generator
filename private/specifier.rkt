@@ -19,63 +19,59 @@
     ((stream-index ind) (format "~a" ind))))
 
 ;; stream_type[:additional_stream_specifier]
-(define-match-expander stream-type-and-others
+(define-match-expander stream-type
   (syntax-rules ()
-    ((_ stream-type others)
-     `((#:stream-type . ,(and stream-type (or 'V 'v 'a 's 't 'd)))
-       ,@(? stream-specifier/null? others)))))
-(define (stream-type-and-others? v)
+    ((_ stream-type)
+     `(#:stream-type . ,(and stream-type (or 'V 'v 'a 's 't 'd))))))
+(define (stream-type? v)
   (match v
-    ((stream-type-and-others _ _) #t)
+    ((stream-type _) #t)
     (_ #f)))
-(define (render-stream-type-and-others v)
+(define (render-stream-type v)
   (match v
-    ((stream-type-and-others type others)
-     (append-specifier (format "~a" type) others))))
+    ((stream-type type)
+     (format "~a" type))))
 
 ;; g:group_specifier[:additional_stream_specifier]
-(define-match-expander stream-group-and-others
+(define-match-expander stream-group
   (syntax-rules ()
-    ((_ info others)
-     `((#:stream-group
-        .
-        ,(?
-          (lambda (v) (or (exact-nonnegative-integer? v) (string? v)))
-          (app (lambda (v)
-                 (if (exact-nonnegative-integer? v)
-                     (cons 'index v)
-                     (cons 'id v)))
-               info)))
-       ,@(? stream-specifier/null? others)))))
-(define (stream-group-and-others? v)
+    ((_ type value)
+     `(#:stream-group
+       .
+       ,(?
+         (lambda (v) (or (exact-nonnegative-integer? v) (string? v)))
+         (app (lambda (v)
+                (if (exact-nonnegative-integer? v)
+                    (cons 'index v)
+                    (cons 'id v)))
+              (cons type value))))
+     )))
+(define (stream-group? v)
   (match v
-    ((stream-group-and-others _ _) #t)
+    ((stream-group _ _) #t)
     (_ #f)))
-(define (render-stream-group-and-others v)
+(define (render-stream-group v)
   (match v
-    ((stream-group-and-others info others)
-     (append-specifier
-      (string-append
-       "g:"
-       (match info
-         ((cons 'index ind) (format "~a" ind))
-         ((cons 'id id) (format "i:~a" id))))
-      others))))
+    ((stream-group type value)
+     (string-append
+      "g:"
+      (cond
+        ((eq? 'index type) (format "~a" value))
+        ((eq? 'id type) (format "i:~a" value)))))))
 
 ;; p:program_id[:additional_stream_specifier]
-(define-match-expander program-and-others
+(define-match-expander program
   (syntax-rules ()
-    ((_ id others)
-     `((#:program . ,(and id (? string?)))
-       ,@(? stream-specifier/null? others)))))
-(define (program-and-others? v)
+    ((_ id)
+     `(#:program . ,(and id (? string?))))))
+(define (program? v)
   (match v
-    ((program-and-others _ _) #t)
+    ((program _) #t)
     (_ #f)))
-(define (render-program-and-others v)
+(define (render-program v)
   (match v
-    ((program-and-others id others)
-     (append-specifier (string-append "p:" (format "~a" id)) others))))
+    ((program id)
+     (string-append "p:" (format "~a" id)))))
 
 ;; #stream_id or i:stream_id
 (define-match-expander stream-id
@@ -118,36 +114,40 @@
     (_ #f)))
 (define (render-usable-configuration v) (match v ((u u) u)))
 
-(define (stream-specifier/null? v)
-  (or (stream-specifier? v) (null? v)))
 (define (stream-specifier? ov)
   (and (list? ov) (not (null? ov))
-       (let ((v (parse-argument-list ov)))
-         (cond ((stream-type-and-others? v))
-               ((stream-group-and-others? v))
-               ((program-and-others? v))
-               ((and (stream-index? (car v)) (null? (cdr v))))
-               ((and (stream-id? (car v)) (null? (cdr v))))
-               ((and (metadata? (car v)) (null? (cdr v))))
-               ((and (usable-configuration? (car v)) (null? (cdr v))))
-               (else #f)))))
-(define (append-specifier p v)
-  (if (null? v)
-      p
-      (string-append p sep (render-stream-speficier v))))
+       (let ((parsed (parse-argument-list ov)))
+         (and parsed
+              (letrec ((specifier?
+                        (lambda (v)
+                          (or (and (stream-type? (car v)) (specifier/null? (cdr v)))
+                              (and (stream-group? (car v)) (specifier/null? (cdr v)))
+                              (and (program? (car v)) (specifier/null? (cdr v)))
+                              (and (stream-index? (car v)) (null? (cdr v)))
+                              (and (stream-id? (car v)) (null? (cdr v)))
+                              (and (metadata? (car v)) (null? (cdr v)))
+                              (and (usable-configuration? (car v)) (null? (cdr v))))))
+                       (specifier/null? (lambda (v) (or (null? v) (specifier? v)))))
+                (specifier? parsed))))))
 (define (render-stream-speficier ov)
-  (define v (parse-argument-list ov))
-  (cond ((stream-type-and-others? v) (render-stream-type-and-others v))
-        ((stream-group-and-others? v) (render-stream-group-and-others v))
-        ((program-and-others? v) (render-program-and-others v))
-        ((and (stream-index? (car v)) (null? (cdr v)))
-         (render-stream-index (car v)))
-        ((and (stream-id? (car v)) (null? (cdr v)))
-         (render-stream-id (car v)))
-        ((and (metadata? (car v)) (null? (cdr v)))
-         (render-metadata (car v)))
-        ((and (usable-configuration? (car v)) (null? (cdr v)))
-         (render-usable-configuration (car v)))))
+  (define (append-specifier p v)
+    (if (null? v)
+        p
+        (string-append p sep (render v))))
+  (define (render v)
+    (cond ((stream-type? (car v)) (append-specifier (render-stream-type (car v)) (cdr v)))
+          ((stream-group? (car v)) (append-specifier (render-stream-group (car v)) (cdr v)))
+          ((program? (car v)) (append-specifier (render-program (car v)) (cdr v)))
+          ((stream-index? (car v))
+           (render-stream-index (car v)))
+          ((stream-id? (car v))
+           (render-stream-id (car v)))
+          ((metadata? (car v))
+           (render-metadata (car v)))
+          ((usable-configuration? (car v))
+           (render-usable-configuration (car v)))))
+  (define parsed (parse-argument-list ov))
+  (render parsed))
 
 (module* test racket/base
   (require (submod "..") rackunit)

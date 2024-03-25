@@ -232,7 +232,7 @@
                 (string-append (render-link-labels (list name))
                                (render-filter-name name)
                                "="
-                               (render-filter-arguments (list (cons kw str) str))
+                               (render-filter-arguments (list kw str str))
                                (render-link-labels (list name)))))
 
 ;; FILTERCHAIN ::= FILTER [,FILTERCHAIN]
